@@ -93,6 +93,9 @@ function Home() {
           <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-[#841919] pl-3 tracking-wide">
             Popular Movies pagal
           </h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-[#841919] pl-3 tracking-wide">
+            Popular Movies pagal
+          </h2>
         </div>
 
         {gridMovies.length === 0 ? (
