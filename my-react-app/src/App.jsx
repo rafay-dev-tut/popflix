@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from './theme/header';
-import Fotter from './theme/fotter'; // 👈 Check karein agar spelling folder mein 'footer' hai toh yahan bhi theek karein
+import Footer from './theme/Footer'; // 👈 Check karein agar spelling folder mein 'footer' hai toh yahan bhi theek karein
 import Home from './pages/Home';
 import Movies from './pages/Movies';
 import MovieDetails from './pages/MovieDetails'; 
@@ -34,7 +34,7 @@ function App() {
         </main>
 
         {/* Footer bottom par hi rahega */}
-        <Fotter />
+        <Footer />
         
       </div>
     </BrowserRouter>

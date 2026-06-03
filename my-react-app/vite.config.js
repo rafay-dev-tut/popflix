@@ -6,6 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
+    tailwindcss(), // 👈 Aapka Tailwind bilkul mehfooz hai, isko nahi chhera!
   ],
+  build: {
+    // Agar CSS ya JS chunk ka size bara ho toh Vercel build ko fail na kare
+    chunkSizeWarningLimit: 2000,
+  }
 })

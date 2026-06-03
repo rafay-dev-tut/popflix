@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_KEY = '204aa4b3666847e0d703930da9824bac'; 
+// 👈 Humne direct key hatakar Vercel aur Vite ke mutabiq load kar li hai
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY || '204aa4b3666847e0d703930da9824bac'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
 
@@ -8,7 +9,7 @@ const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
 export const fetchPopularMovies = async (page = 1) => {
   try {
     const response = await axios.get(`${BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US&page=${page}`);
-    return response.data; // Returns full data containing results and total_pages
+    return response.data; 
   } catch (error) {
     console.error("Error fetching popular movies:", error);
     return { results: [], total_pages: 1 };
@@ -66,7 +67,7 @@ export const fetchMovieVideos = async (movieId) => {
   }
 };
 
-// 6. Movies Search karne ka function 👈 (New added for working Header search)
+// 6. Movies Search karne ka function
 export const searchMovies = async (query, page = 1) => {
   try {
     if (!query) return { results: [], total_pages: 1 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchMovieDetails, fetchMovieVideos, getImageUrl } from '../services/api';
 
@@ -7,21 +7,27 @@ function MovieDetails() {
   const [movie, setMovie] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("trailer"); // 'trailer' ya 'fullMovie'
+  const [activeTab, setActiveTab] = useState("trailer");
   const [serverKey, setServerKey] = useState("autoembed");
+  const [iframeKey, setIframeKey] = useState(0); // force re-mount on server change
+  const playerRef = useRef(null);
 
   useEffect(() => {
     const getMovieDetails = async () => {
       setLoading(true);
       const details = await fetchMovieDetails(id);
       const videoKey = await fetchMovieVideos(id);
-      
       setMovie(details);
       setTrailerKey(videoKey);
       setLoading(false);
     };
     getMovieDetails();
   }, [id]);
+
+  const handleServerChange = (newServer) => {
+    setServerKey(newServer);
+    setIframeKey(prev => prev + 1); // remount iframe so new src loads cleanly
+  };
 
   if (loading) {
     return (
@@ -40,137 +46,172 @@ function MovieDetails() {
     );
   }
 
-  
   const movieSources = {
-  
-    multiembed: `https://multiembed.mov/?video_id=${movie.id}&tmdb=1`,
-    
-    
     autoembed: `https://player.autoembed.cc/embed/movie/${movie.id}`,
-    
-   
-    vidsrc_me: `https://vidsrc.me/embed/movie/${movie.id}`,
-    
-   
-    smashy: `https://embed.smashystream.com/playere.php?tmdb=${movie.id}`
+    multiembed: `https://multiembed.mov/?video_id=${movie.id}&tmdb=1`,
+    vidsrc_me: `https://vidsrc.me/embed/movie?tmdb=${movie.id}`,
+    smashy: `https://embed.smashystream.com/playere.php?tmdb=${movie.id}`,
   };
 
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-10 text-white">
-      
-      
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab("trailer")}
-            className={`px-4 py-2 rounded-t-lg font-semibold text-xs tracking-wide transition-all ${
-              activeTab === "trailer" ? 'bg-[#841919] text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            🎬 Play Trailer
-          </button>
-          <button
-            onClick={() => setActiveTab("fullMovie")}
-            className={`px-4 py-2 rounded-t-lg font-semibold text-xs tracking-wide transition-all ${
-              activeTab === "fullMovie" ? 'bg-[#841919] text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
-            }`}
-          >
-            ⭐ Watch Full Movie (VIP)
-          </button>
-        </div>
+  const servers = [
+    { key: "autoembed",  label: "Server 1", icon: "🚀" },
+    { key: "multiembed", label: "Server 2", icon: "⚡" },
+    { key: "vidsrc_me",  label: "Server 3", icon: "🌐" },
+    { key: "smashy",     label: "Server 4", icon: "🔒" },
+  ];
 
-        
-        {activeTab === "fullMovie" && (
-          <div className="flex items-center gap-2 text-xs bg-gray-900 px-3 py-1.5 border border-gray-800 rounded">
-            <span className="text-gray-400">Movie ID: {movie.id} | Link:</span>
-            <select 
-              value={serverKey} 
-              onChange={(e) => setServerKey(e.target.value)}
-              className="bg-black border border-gray-700 text-white rounded px-2 py-0.5 focus:outline-none cursor-pointer font-semibold"
-            >
-              <option value="autoembed">🚀 Server 1 (Auto-Load)</option>
-              <option value="multiembed">⚡ Server 2 (Multi-Player)</option>
-              <option value="vidsrc_me">🌐 Server 3 (Backup Stream)</option>
-              <option value="smashy">🔒 Server 4 (Ultra Bypass)</option>
-            </select>
-          </div>
-        )}
+  return (
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-10 text-white">
+
+      {/* ── Tab Buttons ── */}
+      <div className="flex gap-2 mb-0">
+        <button
+          onClick={() => setActiveTab("trailer")}
+          className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-t-lg font-semibold text-xs tracking-wide transition-all ${
+            activeTab === "trailer"
+              ? 'bg-[#841919] text-white'
+              : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+          }`}
+        >
+          🎬 Trailer
+        </button>
+        <button
+          onClick={() => setActiveTab("fullMovie")}
+          className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-t-lg font-semibold text-xs tracking-wide transition-all ${
+            activeTab === "fullMovie"
+              ? 'bg-[#841919] text-white'
+              : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+          }`}
+        >
+          ⭐ Full Movie
+        </button>
       </div>
 
-     
-      <div className="w-full aspect-video rounded-b-xl rounded-tr-xl overflow-hidden bg-black shadow-2xl mb-10 border border-gray-800 relative">
+      {/* ── Player Box ── */}
+      <div
+        ref={playerRef}
+        className="w-full rounded-b-xl rounded-tr-xl overflow-hidden bg-black shadow-2xl border border-gray-800 relative"
+        style={{ aspectRatio: '16/9' }}
+      >
         {activeTab === "trailer" ? (
           trailerKey ? (
             <iframe
+              key={`trailer-${trailerKey}`}
               className="w-full h-full"
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&playsinline=1`}
               title="Movie Trailer"
               frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
-            ></iframe>
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500">
+            <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
               Trailer not available.
             </div>
           )
         ) : (
-         
-          <div className="w-full h-full relative bg-black">
-            <iframe
-              className="w-full h-full"
-              src={movieSources[serverKey]}
-              title="Full Movie Player"
-              frameBorder="0"
-              allowFullScreen
-              
-            ></iframe>
-
-           
-            <div 
-              className="absolute top-[8%] left-0 w-full h-[78%] bg-transparent cursor-pointer pointer-events-auto"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            />
-          </div>
+          <iframe
+            key={`movie-${serverKey}-${iframeKey}`}
+            className="w-full h-full"
+            src={movieSources[serverKey]}
+            title="Full Movie Player"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            referrerPolicy="origin"
+          />
         )}
       </div>
 
-     
-      <div className="flex flex-col md:flex-row gap-8 items-start">
-        <div className="w-48 sm:w-64 flex-shrink-0 rounded-lg overflow-hidden shadow-md border border-gray-800">
-          <img src={getImageUrl(movie.poster_path)} alt={movie.title} className="w-full h-auto" />
+      {/* ── Server Selector (only in Full Movie tab) ── */}
+      {activeTab === "fullMovie" && (
+        <div className="mt-3 mb-6">
+          {/* Mobile: scrollable pill row */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {servers.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => handleServerChange(s.key)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  serverKey === s.key
+                    ? 'bg-[#841919] border-[#841919] text-white'
+                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'
+                }`}
+              >
+                <span>{s.icon}</span>
+                <span>{s.label}</span>
+                {serverKey === s.key && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>}
+              </button>
+            ))}
+          </div>
+          <p className="text-gray-600 text-xs mt-2 pl-1">
+            If one server doesn't work, try another ↑
+          </p>
+        </div>
+      )}
+
+      {/* ── Movie Info ── */}
+      <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start mt-2">
+
+        {/* Poster */}
+        <div className="w-28 sm:w-48 md:w-64 flex-shrink-0 rounded-lg overflow-hidden shadow-md border border-gray-800">
+          <img
+            src={getImageUrl(movie.poster_path)}
+            alt={movie.title}
+            className="w-full h-auto object-cover"
+          />
         </div>
 
-        <div className="flex-grow">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">{movie.title}</h1>
-          <p className="text-gray-400 text-sm italic mb-4">{movie.tagline}</p>
+        {/* Details */}
+        <div className="flex-grow min-w-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 leading-tight">
+            {movie.title}
+          </h1>
+          {movie.tagline && (
+            <p className="text-gray-400 text-sm italic mb-3">{movie.tagline}</p>
+          )}
 
-          <div className="flex flex-wrap gap-3 items-center text-xs font-semibold mb-6">
-            <span className="bg-[#841919] text-white px-2.5 py-1 rounded">⭐ {movie.vote_average?.toFixed(1)}</span>
-            <span className="bg-gray-800 text-gray-300 px-2.5 py-1 rounded">{movie.release_date?.split('-')[0]}</span>
-            <span className="bg-gray-800 text-gray-300 px-2.5 py-1 rounded">{movie.runtime} min</span>
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 items-center text-xs font-semibold mb-5">
+            <span className="bg-[#841919] text-white px-2.5 py-1 rounded">
+              ⭐ {movie.vote_average?.toFixed(1)}
+            </span>
+            <span className="bg-gray-800 text-gray-300 px-2.5 py-1 rounded">
+              {movie.release_date?.split('-')[0]}
+            </span>
+            {movie.runtime && (
+              <span className="bg-gray-800 text-gray-300 px-2.5 py-1 rounded">
+                {movie.runtime} min
+              </span>
+            )}
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-bold border-b border-gray-800 pb-2 mb-3 tracking-wide">Overview</h3>
-            <p className="text-gray-300 text-sm leading-relaxed max-w-3xl">{movie.overview}</p>
+          {/* Overview */}
+          <div className="mb-5">
+            <h3 className="text-base sm:text-lg font-bold border-b border-gray-800 pb-2 mb-3 tracking-wide">
+              Overview
+            </h3>
+            <p className="text-gray-300 text-sm leading-relaxed">{movie.overview}</p>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-400 mb-2">Genres</h4>
-            <div className="flex flex-wrap gap-2">
-              {movie.genres?.map((genre) => (
-                <span key={genre.id} className="text-xs bg-gray-900 border border-gray-800 px-3 py-1 rounded-full text-gray-300">
-                  {genre.name}
-                </span>
-              ))}
+          {/* Genres */}
+          {movie.genres?.length > 0 && (
+            <div>
+              <h4 className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Genres</h4>
+              <div className="flex flex-wrap gap-2">
+                {movie.genres.map((genre) => (
+                  <span
+                    key={genre.id}
+                    className="text-xs bg-gray-900 border border-gray-800 px-3 py-1 rounded-full text-gray-300"
+                  >
+                    {genre.name}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-
     </div>
   );
 }

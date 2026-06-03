@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom'; 
 import logo from '../assets/POPFLiX.svg'; 
 
-function Fotter() {
+function Footer() {
   return (
  
     <footer className="bg-[#0b0c10] text-gray-400 border-t border-gray-900/80 mt-auto py-10 transition-all duration-300">
@@ -17,7 +17,7 @@ function Fotter() {
               className="h-6 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity" 
             />
           </Link>
-          <p className="text-[11px] text-gray-500 max-w-[250px] text-center md:text-left tracking-wide">
+          <p className="text-[11px] text-gray-500 max-w-62.5 text-center md:text-left tracking-wide">
             Your ultimate cinematic destination for movies and entertainment.
           </p>
         </div>
@@ -45,4 +45,4 @@ function Fotter() {
   );
 }
 
-export default Fotter;
+export default Footer;
