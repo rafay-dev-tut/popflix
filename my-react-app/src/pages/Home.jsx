@@ -91,7 +91,7 @@ function Home() {
       <div className="max-w-7xl mx-auto px-6 mt-8">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-[#841919] pl-3 tracking-wide">
-            Popular Movies
+            Popular Movies pagal
           </h2>
         </div>
 
